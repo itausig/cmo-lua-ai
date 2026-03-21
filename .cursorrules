@@ -1,0 +1,203 @@
+# Command: Modern Operations (CMO) Lua Scripting Rules
+
+You are writing Lua scripts for Command: Modern Operations (CMO), a naval/air warfare simulation.
+CMO uses Lua 5.1. Scripts run inside the game engine with a custom API.
+
+## Critical Rules
+
+1. ALWAYS use GUIDs over unit names when possible. Names can be duplicated across sides.
+2. Event scripts fail SILENTLY — always check return values and use pcall for critical operations.
+3. Multi-line scripts in event actions require '\r\n' for newlines.
+4. Tool_EmulateNoConsole(true) at the top of console scripts that test event behavior.
+5. Contact GUIDs are NOT the same as unit GUIDs. Use contact.actualunitid to get real unit GUID.
+6. The KeyStore only accepts strings. Use tostring()/tonumber() for numeric values.
+7. Altitude defaults to meters. Use 'FT' suffix for feet: {altitude='5000 FT'}
+8. Latitude/Longitude: decimal (-38.5) or DMS string ('N38.50.00'/'W72.00.00')
+9. DateTime format with specifier: "2027-06-09 1:30:00!yyyy-MM-dd HH:mm:ss"
+10. EMCON string format: 'Radar=Active;Sonar=Passive;OECM=Active'
+11. ScenEdit_AddUnit returns a Unit wrapper — always store .guid immediately in KeyStore.
+12. VP_GetSide returns a Side wrapper — .units is an array of unit wrappers.
+13. Wrapper properties are live snapshots; re-fetch the unit if you need updated values.
+14. ScenEdit_SetUnit({guid=..., ...}) modifies a unit in place; ScenEdit_UpdateUnit is for sensors.
+15. lua_script actions in events run in a sandboxed context — no upvalues from outer scope.
+
+## Function Naming Conventions
+- ScenEdit_* — Functions that modify the scenario (add/set/delete/get operations)
+- VP_* — "View-Point" functions that read scenario state (VP_GetSide, VP_GetUnit, etc.)
+- Tool_* — Utility functions (Tool_Range, Tool_Bearing, Tool_LOS, etc.)
+- World_* — Geographic/world functions (World_GetElevation, etc.)
+- UI_* — User interface functions (UI_SetCameraView, etc.)
+
+## Common Patterns
+
+### Adding a unit
+```lua
+ScenEdit_AddUnit({
+    side      = 'Blue',
+    type      = 'Ship',
+    name      = 'USS Burke',
+    dbid      = 2869,
+    latitude  = 'N38.50.00',
+    longitude = 'W72.00.00',
+    proficiency = 'Veteran'
+})
+-- type: 'Ship', 'Aircraft', 'Submarine', 'Facility', 'Satellite'
+-- For aircraft: add loadoutid and Base parameters
+```
+
+### Getting a unit
+```lua
+local unit = ScenEdit_GetUnit({guid='abc-123'})          -- preferred
+local unit = ScenEdit_GetUnit({side='Blue', name='USS Burke'})  -- fallback
+```
+
+### Modifying a unit
+```lua
+ScenEdit_SetUnit({guid='abc-123', heading=270, speed=20, altitude='5000 FT'})
+```
+
+### Creating a mission
+```lua
+local mission = ScenEdit_AddMission('Blue', 'CAP Alpha', 'patrol', {type='air'})
+ScenEdit_SetMission('Blue', 'CAP Alpha', {
+    patrolzone   = {'RP-1','RP-2','RP-3','RP-4'},
+    onethirdrule = true
+})
+```
+
+### Assigning a unit to a mission
+```lua
+ScenEdit_AssignUnitToMission('unit-guid', 'CAP Alpha')
+```
+
+### Setting doctrine
+```lua
+ScenEdit_SetDoctrine({side='Blue'}, {
+    weapon_control_status_air     = 0,   -- Free=0, Tight=1, Hold=2
+    weapon_control_status_surface = 0,
+    weapon_control_status_subsurface = 1,
+})
+-- Can also set for a specific unit: ScenEdit_SetDoctrine({guid='...'}, {...})
+```
+
+### Event system (TCA pattern)
+```lua
+local event = ScenEdit_SetEvent('MyEvent', {mode='add', IsRepeatable=true})
+ScenEdit_SetTrigger({mode='add', type='ScenLoaded', name='OnLoad'})
+ScenEdit_SetEventTrigger(event.guid, {mode='add', name='OnLoad'})
+ScenEdit_SetAction({mode='add', type='LuaScript', name='DoStuff', ScriptText='print("hello")'})
+ScenEdit_SetEventAction(event.guid, {mode='add', name='DoStuff'})
+```
+
+### Persistent state (KeyStore)
+```lua
+ScenEdit_SetKeyValue('my_counter', tostring(5))
+local val = tonumber(ScenEdit_GetKeyValue('my_counter'))
+```
+
+### Context variables in event scripts
+```lua
+local unit    = ScenEdit_UnitX()  -- unit that triggered the event (e.g., destroyed unit)
+local unitY   = ScenEdit_UnitY()  -- the "other" unit (e.g., the detecting unit)
+local contact = ScenEdit_UnitC()  -- contact wrapper in detection events
+-- Always nil-check: if not unit then return end
+```
+
+### Side posture
+```lua
+ScenEdit_SetSidePosture('Blue', 'Red', 'H')  -- H=Hostile, F=Friendly, N=Neutral, U=Unfriendly
+```
+
+### Reference points (for zones)
+```lua
+ScenEdit_AddReferencePoint({
+    side      = 'Blue',
+    name      = 'RP-1',
+    latitude  = 38.5,
+    longitude = -72.0,
+    highlighted = false
+})
+```
+
+### Special messages (in-game player feedback)
+```lua
+ScenEdit_SpecialMessage('Blue', 'Your message to the player here')
+```
+
+### Score management
+```lua
+ScenEdit_SetScore('Blue', 100, 'Objective achieved')  -- set absolute score
+ScenEdit_GetScore('Blue')                              -- returns current score number
+```
+
+### EMCON control
+```lua
+ScenEdit_SetEMCON('Side', 'Blue', 'Radar=Passive;Sonar=Active;OECM=Passive')
+ScenEdit_SetEMCON('Unit',  'unit-guid', 'Radar=Active')
+```
+
+### Changing sides (side switching)
+```lua
+ScenEdit_SetUnitSide({guid='unit-guid', side='Red'})
+```
+
+### Adding sensors to units
+```lua
+ScenEdit_UpdateUnit({
+    guid       = 'unit-guid',
+    mode       = 'add_sensor',
+    dbid       = 6099,          -- sensor dbid from database viewer
+    arc_detect = {'360'},
+    arc_track  = {'360'}
+})
+```
+
+## Unit Types (dbid lookup required in in-game database viewer)
+- `'Aircraft'`, `'Ship'`, `'Submarine'`, `'Facility'`, `'Satellite'`
+
+## Mission Types
+- `'strike'` (subtypes: `'land'`, `'air'`, `'sub'`, `'naval'`)
+- `'patrol'` (subtypes: `'air'`, `'sub'`, `'naval'`, `'land'`)
+- `'support'`, `'ferry'`, `'mining'`, `'mineclearing'`, `'escort'`, `'cargo'`
+
+## Key Wrapper Properties
+**Unit:** `.guid`, `.name`, `.side`, `.type`, `.latitude`, `.longitude`, `.altitude`, `.heading`, `.speed`, `.fuel`, `.damage`, `.magazines`, `.mounts`, `.sensors`, `.doctrine`, `.mission`, `.base`, `.group`, `.course`, `.proficiency`
+
+**Side:** `.guid`, `.name`, `.units`, `.contacts`, `.missions`, `.doctrine`, `.rps`, `.losses`, `.expenditures`
+
+**Mission:** `.guid`, `.name`, `.side`, `.type`, `.isactive`, `.unitlist`, `.targetlist`, `.doctrine`
+
+**Contact:** `.guid`, `.name`, `.latitude`, `.longitude`, `.altitude`, `.heading`, `.speed`, `.type`, `.classificationlevel`, `.actualunitid`, `.detectionBy`, `.BDA`
+
+## Error Handling
+```lua
+local success, result = pcall(ScenEdit_AddUnit, {...})
+if not success then
+    print("Error: " .. tostring(result))
+    ScenEdit_SpecialMessage('Blue', 'Script error — check console')
+end
+```
+
+## Style Guide
+- Use `local` for all variables inside functions
+- Prefix constants with uppercase: `local MAX_UNITS = 10`
+- Use EmmyLua/LuaLS annotations for functions: `--- @param`, `--- @return`
+- Nil-check all unit/side/mission lookups before use
+- Store unit GUIDs in KeyStore immediately after ScenEdit_AddUnit
+- Group related code with `-- ===` section comments
+- Use `ScenEdit_SpecialMessage` for player-visible feedback, `print` for debug only
+
+## Common Pitfalls
+- `ScenEdit_GetUnit` returns nil (not an error) if the unit is dead or doesn't exist
+- `VP_GetSide().units` can be empty — always check `#side.units > 0` before iterating
+- `ScenEdit_SetMission` with `patrolzone` overwrites the entire zone — always supply all RPs
+- Timed triggers fire at scenario time, not real time — use `ScenEdit_CurrentTime()` for offsets
+- `loadoutid` is required for aircraft; omitting it spawns with no weapons
+- `ScenEdit_AddMission` returns the mission object but `ScenEdit_SetMission` returns nil
+
+## References
+- API Docs: https://commandlua.github.io
+- Wrappers: https://commandlua.github.io/assets/Wrappers.html
+- Functions: https://commandlua.github.io/assets/Functions.html
+- Enums: https://commandlua.github.io/assets/Enumerations.html
+- Community Forum (Lua Legion): https://www.matrixgames.com/forums/tt.asp?forumid=1681
