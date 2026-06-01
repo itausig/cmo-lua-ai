@@ -187,18 +187,18 @@ local function buildHandlerScript()
         '        pcall(ScenEdit_SetTrigger, {mode="add",type="Time",name=evName.."_T",time=expiryTime})\r\n'..
         '        pcall(ScenEdit_SetEventTrigger, ev.guid, {mode="add",name=evName.."_T"})\r\n'..
         '        local expScript =\r\n'..
-        '            "local g=ScenEdit_GetKeyValue(\\"CSAR_PILOT_GUID\\")\\r\\n"...\r\n'..
-        '            "if g~=\\"\\" then\\r\\n"...\r\n'..
-        '            "  local ok2,u2=pcall(ScenEdit_GetUnit,{guid=g})\\r\\n"...\r\n'..
-        '            "  if ok2 and u2 then\\r\\n"...\r\n'..
-        '            "    pcall(ScenEdit_DeleteUnit,{guid=g})\\r\\n"...\r\n'..
-        '            "    local n=tonumber(ScenEdit_GetKeyValue(\\"CSAR_KIA\\")) or 0\\r\\n"...\r\n'..
-        '            "    ScenEdit_SetKeyValue(\\"CSAR_KIA\\",tostring(n+1))\\r\\n"...\r\n'..
-        '            "    local s=ScenEdit_GetScore(\\"Blue\\")\\r\\n"...\r\n'..
-        '            "    ScenEdit_SetScore(\\"Blue\\",s-50,\\"Pilot KIA\\")\\r\\n"...\r\n'..
-        '            "    ScenEdit_SpecialMessage(\\"Blue\\",\\"CSAR window expired — pilot lost.\\")\\r\\n"...\r\n'..
-        '            "  end\\r\\n"...\r\n'..
-        '            "  ScenEdit_SetKeyValue(\\"CSAR_ACTIVE\\",\\"0\\")\\r\\n"...\r\n'..
+        '            "local g=ScenEdit_GetKeyValue(\\"CSAR_PILOT_GUID\\")\\r\\n"..\r\n'..
+        '            "if g~=\\"\\" then\\r\\n"..\r\n'..
+        '            "  local ok2,u2=pcall(ScenEdit_GetUnit,{guid=g})\\r\\n"..\r\n'..
+        '            "  if ok2 and u2 then\\r\\n"..\r\n'..
+        '            "    pcall(ScenEdit_DeleteUnit,{guid=g})\\r\\n"..\r\n'..
+        '            "    local n=tonumber(ScenEdit_GetKeyValue(\\"CSAR_KIA\\")) or 0\\r\\n"..\r\n'..
+        '            "    ScenEdit_SetKeyValue(\\"CSAR_KIA\\",tostring(n+1))\\r\\n"..\r\n'..
+        '            "    local s=ScenEdit_GetScore(\\"Blue\\")\\r\\n"..\r\n'..
+        '            "    ScenEdit_SetScore(\\"Blue\\",s-50,\\"Pilot KIA\\")\\r\\n"..\r\n'..
+        '            "    ScenEdit_SpecialMessage(\\"Blue\\",\\"CSAR window expired — pilot lost.\\")\\r\\n"..\r\n'..
+        '            "  end\\r\\n"..\r\n'..
+        '            "  ScenEdit_SetKeyValue(\\"CSAR_ACTIVE\\",\\"0\\")\\r\\n"..\r\n'..
         '            "end\\r\\n"\r\n'..
         '        pcall(ScenEdit_SetAction,{mode="add",type="LuaScript",name=evName.."_A",ScriptText=expScript})\r\n'..
         '        pcall(ScenEdit_SetEventAction, ev.guid, {mode="add",name=evName.."_A"})\r\n'..

@@ -1,58 +1,46 @@
 #!/usr/bin/env lua
 --- ============================================================
 --- CMO Lua Repository Validation Script
---- Syntax-checks all Lua files in the repository using loadfile().
+--- Syntax-checks all Lua files in the repository using loadfile(),
+--- and syntax-checks the Lua scripts that example modules generate
+--- for CMO event actions (the `ScriptText` passed to
+--- ScenEdit_SetAction), which loadfile() alone cannot catch.
 ---
 --- Run with: lua tests/validate.lua
 --- (from the repo root directory)
 ---
 --- Checks:
----   1. All src/core/*.lua       — core utility modules
----   2. All src/lib/**/*.lua     — library modules
----   3. All src/templates/*.lua  — template files
----   4. All src/examples/*.lua   — example scenario scripts
----   5. types/cmo.lua            — type definitions
+---   1. Every file in the registry exists and parses with loadfile().
+---   2. Any .lua file under src/ NOT in the registry also parses.
+---   3. Generated event-action scripts produced by src/examples/*.lua
+---      parse with loadstring().
 ---
 --- Output:
----   PASS <file>   — file parsed without syntax errors
----   FAIL <file>   — file has syntax errors (error printed)
----   WARN <file>   — file not found (expected but missing)
+---   PASS <file>   — parsed without syntax errors
+---   FAIL <file>   — missing (but registered) or has syntax errors
 ---
---- Exit code: 0 if all pass, 1 if any failures.
+--- Exit code: 0 only if every check passes; 1 otherwise.
 --- ============================================================
 
 local REPO_ROOT = '.'  -- run from repo root
 
 -- ============================================================
 -- FILE REGISTRY
--- All Lua files that should exist and parse cleanly.
+-- All Lua files that should exist and parse cleanly. Keep this
+-- in sync with the actual repository layout — a registered file
+-- that is missing is a FAILURE, not a warning.
 -- ============================================================
 
 local FILES = {
-    -- Core utilities
-    'src/core/utils.lua',
-    'src/core/keystore.lua',
-
     -- Library modules
-    'src/lib/combat/attack.lua',
-    'src/lib/combat/damage.lua',
+    'src/lib/cargo/cargo.lua',
     'src/lib/doctrine/doctrine.lua',
     'src/lib/doctrine/wra.lua',
     'src/lib/emcon/emcon.lua',
-    'src/lib/events/builder.lua',
-    'src/lib/events/triggers.lua',
-    'src/lib/logistics/fuel.lua',
-    'src/lib/logistics/resupply.lua',
-    'src/lib/missions/builder.lua',
-    'src/lib/missions/management.lua',
-    'src/lib/movement/course.lua',
-    'src/lib/movement/formation.lua',
     'src/lib/scoring/scoring.lua',
-    'src/lib/sensors/detection.lua',
     'src/lib/ui/messages.lua',
     'src/lib/weather/weather.lua',
     'src/lib/zones/areas.lua',
-    'src/lib/cargo/cargo.lua',
 
     -- Templates
     'src/templates/scenario_init.lua',
@@ -61,7 +49,6 @@ local FILES = {
 
     -- Examples
     'src/examples/carrier_ops.lua',
-    'src/examples/asw_patrol.lua',
     'src/examples/csar_system.lua',
     'src/examples/dynamic_campaign.lua',
     'src/examples/red_ai.lua',
@@ -70,15 +57,22 @@ local FILES = {
     'types/cmo.lua',
 }
 
+-- Files whose top-level execution is safe to run under stubs in order
+-- to capture and syntax-check the event-action scripts they generate.
+local EMBEDDED_SCRIPT_FILES = {
+    'src/examples/carrier_ops.lua',
+    'src/examples/csar_system.lua',
+    'src/examples/dynamic_campaign.lua',
+    'src/examples/red_ai.lua',
+}
+
 -- ============================================================
 -- MOCK CMO API
--- Provide stubs for all CMO-specific globals so loadfile()
--- doesn't fail due to undefined function calls at module level.
--- (Note: loadfile only parses; it doesn't execute. But some
--- files use globals at module scope that need to exist.)
+-- Provide stubs for all CMO-specific globals so executing a
+-- module at load time (to capture generated scripts) does not
+-- fail due to undefined function calls.
 -- ============================================================
 
--- Stub out all CMO API functions as no-ops
 local CMO_STUBS = {
     'ScenEdit_AddUnit', 'ScenEdit_GetUnit', 'ScenEdit_SetUnit', 'ScenEdit_DeleteUnit',
     'ScenEdit_UpdateUnit', 'ScenEdit_SetUnitSide', 'ScenEdit_AssignUnitToMission',
@@ -106,16 +100,41 @@ local CMO_STUBS = {
     'ScenEdit_AddTrigger', 'ScenEdit_AddCondition', 'ScenEdit_AddAction',
 }
 
-for _, name in ipairs(CMO_STUBS) do
-    if _G[name] == nil then
-        _G[name] = function(...) return nil end
-    end
-end
+-- Capture of every event-action script that modules generate.
+local CAPTURED_SCRIPTS = {}
 
--- Also stub ScenEdit_GetKeyValue to return '' by default
-_G['ScenEdit_GetKeyValue'] = function(key) return '' end
-_G['ScenEdit_CurrentTime'] = function() return os.time() end
-_G['ScenEdit_GetScore']    = function(side) return 0 end
+--- Reset all CMO global stubs to safe defaults and arm script capture.
+--- Stubs return a table-with-guid so that `result.guid` chains work,
+--- and ScenEdit_SetAction/AddAction record any ScriptText they receive.
+local function installStubs()
+    local function capture(t)
+        if type(t) == 'table' and type(t.ScriptText) == 'string' then
+            CAPTURED_SCRIPTS[#CAPTURED_SCRIPTS + 1] = t.ScriptText
+        end
+        return { guid = 'stub-guid' }
+    end
+
+    for _, name in ipairs(CMO_STUBS) do
+        _G[name] = function() return { guid = 'stub-guid' } end
+    end
+
+    -- Sensible typed defaults so module-level logic can run far enough
+    -- to build its generated scripts.
+    _G.ScenEdit_GetKeyValue = function() return '' end
+    _G.ScenEdit_CurrentTime = function() return 1000 end
+    _G.ScenEdit_GetScore    = function() return 0 end
+    _G.ScenEdit_SetEvent    = function(name) return { guid = 'ev-' .. tostring(name) } end
+    _G.ScenEdit_UnitX       = function()
+        return { type = 'Aircraft', name = 'TestUnit', latitude = 10, longitude = 20 }
+    end
+    _G.ScenEdit_UnitY       = function() return { guid = 'stub-y' } end
+    _G.ScenEdit_AddUnit     = function() return { guid = 'unit-guid' } end
+    _G.ScenEdit_AddMission  = function() return { guid = 'mission-guid' } end
+    _G.VP_GetSide           = function() return { units = {}, contacts = {}, missions = {}, rps = {} } end
+    _G.Tool_Range           = function() return 999 end
+    _G.ScenEdit_SetAction   = capture
+    _G.ScenEdit_AddAction   = capture
+end
 
 -- ============================================================
 -- VALIDATION ENGINE
@@ -123,62 +142,91 @@ _G['ScenEdit_GetScore']    = function(side) return 0 end
 
 local PASS = 0
 local FAIL = 0
-local WARN = 0
-local MISSING = {}
-local ERRORS  = {}
+local ERRORS = {}
 
---- Check if a file exists.
---- @param path string
---- @return boolean
+local function recordPass(label)
+    io.write(string.format('  PASS  %s\n', label))
+    PASS = PASS + 1
+end
+
+local function recordFail(label, err)
+    io.write(string.format('  FAIL  %s\n', label))
+    if err then io.write(string.format('        ERROR: %s\n', tostring(err))) end
+    FAIL = FAIL + 1
+    ERRORS[#ERRORS + 1] = { file = label, error = err and tostring(err) or 'missing file' }
+end
+
 local function fileExists(path)
     local f = io.open(path, 'r')
     if f then f:close(); return true end
     return false
 end
 
---- Validate a single Lua file using loadfile().
---- loadfile() parses the file but does not execute it.
---- This catches syntax errors and undefined-variable references at parse time.
---- @param relPath string  Relative path from repo root
+--- Validate a single Lua file using loadfile() (parse only).
 local function validateFile(relPath)
     local fullPath = REPO_ROOT .. '/' .. relPath
-
     if not fileExists(fullPath) then
-        io.write(string.format('  WARN  %s\n', relPath))
-        WARN = WARN + 1
-        MISSING[#MISSING+1] = relPath
+        recordFail(relPath, 'registered file is missing')
         return
     end
-
-    -- loadfile parses the chunk and returns a function (or nil + error)
     local chunk, err = loadfile(fullPath)
-
-    if chunk then
-        io.write(string.format('  PASS  %s\n', relPath))
-        PASS = PASS + 1
-    else
-        io.write(string.format('  FAIL  %s\n', relPath))
-        io.write(string.format('        ERROR: %s\n', tostring(err)))
-        FAIL = FAIL + 1
-        ERRORS[#ERRORS+1] = {file=relPath, error=tostring(err)}
-    end
+    if chunk then recordPass(relPath) else recordFail(relPath, err) end
 end
 
---- Recursively find all .lua files in a directory.
---- This is a bonus check to catch any files NOT in the registry.
---- @param dir string
---- @return string[]
+--- Recursively find all .lua files under a directory (Unix `find`).
 local function findLuaFiles(dir)
     local files = {}
-    -- Use ls/find if available (Unix); skip silently on Windows
     local pipe = io.popen('find "' .. dir .. '" -name "*.lua" 2>/dev/null')
     if pipe then
-        for line in pipe:lines() do
-            files[#files+1] = line
-        end
+        for line in pipe:lines() do files[#files + 1] = line end
         pipe:close()
     end
     return files
+end
+
+--- Execute a module under stubs to capture the event-action scripts it
+--- generates, then syntax-check each captured script with loadstring().
+--- The module is run inside pcall so runtime errors never abort the suite;
+--- only the SYNTAX of generated scripts is asserted here.
+local function validateEmbeddedScripts(relPath)
+    local fullPath = REPO_ROOT .. '/' .. relPath
+    if not fileExists(fullPath) then
+        recordFail(relPath .. ' [embedded]', 'file missing')
+        return
+    end
+
+    local chunk, loadErr = loadfile(fullPath)
+    if not chunk then
+        recordFail(relPath .. ' [embedded]', 'loadfile: ' .. tostring(loadErr))
+        return
+    end
+
+    local before = #CAPTURED_SCRIPTS
+    installStubs()
+    -- Silence module prints while executing.
+    local realPrint = _G.print
+    _G.print = function() end
+    pcall(chunk)
+    _G.print = realPrint
+
+    local captured = #CAPTURED_SCRIPTS - before
+    if captured == 0 then
+        -- No generated scripts in this module; nothing to assert.
+        return
+    end
+
+    local localFail = 0
+    for i = before + 1, #CAPTURED_SCRIPTS do
+        local script = CAPTURED_SCRIPTS[i]
+        local c, e = loadstring(script, relPath .. ':generated#' .. (i - before))
+        if not c then
+            recordFail(string.format('%s [generated script #%d]', relPath, i - before), e)
+            localFail = localFail + 1
+        end
+    end
+    if localFail == 0 then
+        recordPass(string.format('%s [%d generated script(s)]', relPath, captured))
+    end
 end
 
 -- ============================================================
@@ -191,33 +239,35 @@ io.write('CMO Lua Repository Validation\n')
 io.write(string.format('Checking %d registered files...\n', #FILES))
 io.write('============================================================\n\n')
 
--- Check registered files
+-- 1. Registered files must exist and parse.
 io.write('[ Registered Files ]\n\n')
 for _, f in ipairs(FILES) do
     validateFile(f)
 end
 
--- Bonus: find any extra .lua files not in the registry
+-- 2. Any extra .lua file under src/ must also parse.
 io.write('\n[ Unregistered Lua Files ]\n\n')
 local registrySet = {}
 for _, f in ipairs(FILES) do registrySet[f] = true end
-
-local allFound = findLuaFiles('src')
-for _, path in ipairs(allFound) do
-    -- Normalize path (remove leading ./)
+local extras = 0
+for _, path in ipairs(findLuaFiles('src')) do
     local normalized = path:gsub('^%./', '')
     if not registrySet[normalized] then
-        -- Validate it anyway
+        extras = extras + 1
         local chunk, err = loadfile(path)
         if chunk then
-            io.write(string.format('  PASS* %s (not in registry)\n', normalized))
+            recordPass(normalized .. ' (not in registry)')
         else
-            io.write(string.format('  FAIL* %s (not in registry)\n', normalized))
-            io.write(string.format('        ERROR: %s\n', tostring(err)))
-            FAIL = FAIL + 1
-            ERRORS[#ERRORS+1] = {file=normalized, error=tostring(err)}
+            recordFail(normalized .. ' (not in registry)', err)
         end
     end
+end
+if extras == 0 then io.write('  (none)\n') end
+
+-- 3. Syntax-check generated event-action scripts.
+io.write('\n[ Generated Event-Action Scripts ]\n\n')
+for _, f in ipairs(EMBEDDED_SCRIPT_FILES) do
+    validateEmbeddedScripts(f)
 end
 
 -- ============================================================
@@ -226,8 +276,7 @@ end
 
 io.write('\n')
 io.write('============================================================\n')
-io.write(string.format('Results: %d PASS  %d FAIL  %d WARN (missing)\n',
-    PASS, FAIL, WARN))
+io.write(string.format('Results: %d PASS  %d FAIL\n', PASS, FAIL))
 
 if FAIL > 0 then
     io.write('\nFAILURES:\n')
@@ -236,17 +285,6 @@ if FAIL > 0 then
     end
 end
 
-if WARN > 0 then
-    io.write('\nMISSING FILES:\n')
-    for _, f in ipairs(MISSING) do
-        io.write('  ' .. f .. '\n')
-    end
-end
-
 io.write('============================================================\n\n')
 
-if FAIL > 0 then
-    os.exit(1)
-else
-    os.exit(0)
-end
+os.exit(FAIL > 0 and 1 or 0)

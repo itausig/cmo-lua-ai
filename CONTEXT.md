@@ -69,9 +69,13 @@ ScenEdit_SetKeyValue('BURKE_GUID', unit.guid)  -- always persist GUID
 -- loadoutid = 12345,  -- required; look up in DB viewer
 -- Base = 'Airfield Name',
 
--- Get a unit
-local u = ScenEdit_GetUnit({guid='abc-123'})           -- preferred
-local u = ScenEdit_GetUnit({side='Blue', name='Burke'}) -- fallback
+-- Get a unit. ScenEdit_GetUnit may RAISE or return nil when the unit
+-- is missing/dead (behavior varies by call form and build) — always
+-- pcall it and nil-check the result.
+local ok, u = pcall(ScenEdit_GetUnit, {guid='abc-123'})  -- preferred (GUID)
+if not (ok and u) then return end
+-- Fallback by name (names are not unique across sides):
+-- local ok, u = pcall(ScenEdit_GetUnit, {side='Blue', name='Burke'})
 
 -- Modify a unit
 ScenEdit_SetUnit({guid='abc-123', heading=270, speed=20, altitude='5000 FT'})
@@ -294,7 +298,7 @@ end
 
 | Pitfall | Correct Approach |
 |---------|-----------------|
-| `ScenEdit_GetUnit` raises an error if unit not found | Wrap in `pcall` or check return value |
+| `ScenEdit_GetUnit` is inconsistent when a unit is missing/dead — depending on the call form and game build it may **raise an error** or **return `nil`** | Always wrap it in `pcall` **and** nil-check the result (`local ok, u = pcall(ScenEdit_GetUnit, {guid=g}); if not (ok and u) then return end`) |
 | Using unit names across sides | Use GUIDs — names are not unique |
 | `VP_GetSide().units` may be empty | Check `#side.units > 0` before iterating |
 | `ScenEdit_SetMission` with `patrolzone` overwrites the entire zone | Always supply all RPs in the array |

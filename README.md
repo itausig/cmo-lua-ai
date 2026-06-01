@@ -10,7 +10,7 @@ CMO exposes a powerful but sprawling Lua API. The official docs are scattered ac
 
 1. **Single source of truth** — Every function, wrapper, enum, and data type in one place.
 2. **AI-optimized context** — Drop `CONTEXT.md` or `.cursorrules` into your project and the AI *knows* CMO Lua.
-3. **Battle-tested scripts** — Reusable modules for combat, CSAR, missions, doctrine, events, and more.
+3. **Battle-tested scripts** — Reusable modules for doctrine, EMCON, scoring, weather, zones, cargo, and player messaging, plus full example scenarios (carrier ops, CSAR, dynamic campaign, red AI).
 
 ## Quick Start
 
@@ -24,7 +24,7 @@ CMO exposes a powerful but sprawling Lua API. The official docs are scattered ac
 
 1. Browse `docs/api-reference/` for the complete API.
 2. Copy modules from `src/lib/` into your scenario's Lua folder.
-3. Follow `docs/guides/` for setup and patterns.
+3. Follow `docs/patterns/` for ready-to-use implementation patterns (CSAR, dynamic spawning, side switching, random events).
 
 ### For Scenario Development
 
@@ -53,13 +53,7 @@ cmo-lua-ai/
 │   ├── api-reference/
 │   │   ├── FUNCTIONS.md      # All ScenEdit_*, VP_*, Tool_* functions
 │   │   ├── WRAPPERS.md       # Unit, Side, Mission, Contact, etc. wrappers
-│   │   ├── ENUMS.md          # All enumerated types and codes
-│   │   └── DATA_TYPES.md     # Altitude, GUID, DateTime, KeyStore, etc.
-│   ├── guides/
-│   │   ├── QUICKSTART.md     # First script in 5 minutes
-│   │   ├── EVENT_SYSTEM.md   # Triggers, Conditions, Actions (TCA)
-│   │   ├── SCENARIO_SETUP.md # LuaInit / GameSetup pattern
-│   │   └── BEST_PRACTICES.md # Error handling, GUID usage, performance
+│   │   └── ENUMS.md          # All enumerated types and codes
 │   └── patterns/
 │       ├── CSAR.md           # Combat Search & Rescue implementation
 │       ├── DYNAMIC_SPAWNING.md
@@ -67,49 +61,28 @@ cmo-lua-ai/
 │       └── RANDOM_EVENTS.md
 │
 ├── src/
-│   ├── core/
-│   │   ├── utils.lua         # Foundation utilities (logging, validation, etc.)
-│   │   └── keystore.lua      # Persistent state management wrapper
 │   ├── lib/
-│   │   ├── combat/
-│   │   │   ├── attack.lua    # Engagement and weapon allocation
-│   │   │   └── damage.lua    # Damage assessment and tracking
-│   │   ├── movement/
-│   │   │   ├── course.lua    # Waypoint and course management
-│   │   │   └── formation.lua # Formation control
-│   │   ├── sensors/
-│   │   │   └── detection.lua # Sensor and LOS utilities
-│   │   ├── logistics/
-│   │   │   ├── fuel.lua      # Fuel management
-│   │   │   └── resupply.lua  # Magazine and weapon reloading
-│   │   ├── events/
-│   │   │   ├── builder.lua   # Programmatic event creation (TCA)
-│   │   │   └── triggers.lua  # Common trigger patterns
-│   │   ├── missions/
-│   │   │   ├── builder.lua   # Mission creation helpers
-│   │   │   └── management.lua # Assignment and lifecycle
-│   │   ├── zones/
-│   │   │   └── areas.lua     # Reference points and zone management
-│   │   ├── emcon/
-│   │   │   └── emcon.lua     # Emission control management
+│   │   ├── cargo/
+│   │   │   └── cargo.lua     # Cargo and transport operations
 │   │   ├── doctrine/
 │   │   │   ├── doctrine.lua  # Doctrine configuration
 │   │   │   └── wra.lua       # Weapon Release Authority
+│   │   ├── emcon/
+│   │   │   └── emcon.lua     # Emission control management
 │   │   ├── scoring/
 │   │   │   └── scoring.lua   # Score and side management
 │   │   ├── ui/
 │   │   │   └── messages.lua  # Player messaging and dialogs
-│   │   ├── cargo/
-│   │   │   └── cargo.lua     # Cargo and transport operations
-│   │   └── weather/
-│   │       └── weather.lua   # Weather control
+│   │   ├── weather/
+│   │   │   └── weather.lua   # Weather control
+│   │   └── zones/
+│   │       └── areas.lua     # Reference points and zone management
 │   ├── templates/
 │   │   ├── scenario_init.lua # Boilerplate LuaInit template
 │   │   ├── game_setup.lua    # Boilerplate GameSetup template
 │   │   └── special_action.lua # Special Action template
 │   └── examples/
 │       ├── carrier_ops.lua   # Full carrier battle group scenario
-│       ├── asw_patrol.lua    # ASW patrol with dynamic contacts
 │       ├── csar_system.lua   # Complete CSAR implementation
 │       ├── dynamic_campaign.lua # Multi-phase campaign scripting
 │       └── red_ai.lua        # Advanced AI opponent behavior
@@ -119,7 +92,6 @@ cmo-lua-ai/
 │
 ├── prompts/
 │   ├── system_prompt.md      # Full system prompt for AI assistants
-│   ├── cursor_rules.md       # Source for .cursorrules generation
 │   └── examples.md           # Example prompt/response pairs
 │
 └── tests/
