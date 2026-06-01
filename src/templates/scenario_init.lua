@@ -13,9 +13,12 @@
 --- COPY THIS FILE to your scenario's Lua folder as LuaInit.lua
 --- and customise the sections marked [CUSTOMISE].
 ---
---- DEPENDENCIES:
----   - src/core/utils.lua (optional but recommended)
----   - src/core/keystore.lua (optional but recommended)
+--- DEPENDENCIES (optional helper modules you supply in your
+--- scenario's own Lua folder — none are shipped in this repo):
+---   - utils.lua    (logging/util helpers; optional)
+---   - keystore.lua (KeyStore wrapper; optional)
+--- Each is loaded defensively via pcall(dofile, ...) below, so
+--- the template runs even when they are absent.
 --- ============================================================
 
 -- ===== VERSION TRACKING =====================================

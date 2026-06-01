@@ -390,8 +390,8 @@ When generating CMO Lua scripts:
 ---   its dependencies, and any important notes.
 ---
 --- Dependencies:
----   - utils.lua (src/core/utils.lua)
----   - keystore.lua (src/core/keystore.lua)
+---   - [list any helper modules this script loads, e.g. utils.lua]
+---   - [keystore.lua, etc. — paths relative to your scenario folder]
 --- ============================================================
 ```
 

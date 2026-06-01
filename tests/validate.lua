@@ -18,6 +18,8 @@
 --- Output:
 ---   PASS <file>   — parsed without syntax errors
 ---   FAIL <file>   — missing (but registered) or has syntax errors
+---   INFO <file>   — embedded-script file produced no captured ScriptText
+---                   (not a failure; just makes a zero-capture file visible)
 ---
 --- Exit code: 0 only if every check passes; 1 otherwise.
 --- ============================================================
@@ -206,12 +208,23 @@ local function validateEmbeddedScripts(relPath)
     -- Silence module prints while executing.
     local realPrint = _G.print
     _G.print = function() end
-    pcall(chunk)
+    local ok, runErr = pcall(chunk)
     _G.print = realPrint
 
     local captured = #CAPTURED_SCRIPTS - before
     if captured == 0 then
-        -- No generated scripts in this module; nothing to assert.
+        -- No generated scripts captured under stubs. This is NOT a failure:
+        -- a module may build its ScriptText only along branches the stubs
+        -- don't exercise. Emit a neutral INFO line so a zero-capture file is
+        -- visible rather than silently skipped. If module execution itself
+        -- errored under stubs, note that too (still informational, since this
+        -- harness only asserts the SYNTAX of any scripts it does capture).
+        if ok then
+            io.write(string.format('  INFO  %s [no event-action scripts captured]\n', relPath))
+        else
+            io.write(string.format('  INFO  %s [no scripts captured; module raised under stubs: %s]\n',
+                relPath, tostring(runErr)))
+        end
         return
     end
 
