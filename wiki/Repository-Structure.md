@@ -7,6 +7,9 @@
 - `docs/` — API and scripting pattern documentation
 - `src/` — reusable Lua modules, templates, and examples
 - `types/` — LuaLS annotations for IDE support
+- `prompts/` — prompt sources and AI assistant materials
+- `tests/` — repository validation scripts
+- `wiki/` — GitHub Wiki source pages
 - `tests/` — repository validation scripts
 
 ## Documentation folders
