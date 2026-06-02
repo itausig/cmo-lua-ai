@@ -26,7 +26,6 @@
 
 ## Source folders
 
-- `src/core/` — foundations (`utils.lua`, `keystore.lua`)
-- `src/lib/` — domain modules (combat, missions, doctrine, zones, etc.)
+- `src/lib/` — domain modules (`cargo`, `doctrine`, `emcon`, `scoring`, `ui`, `weather`, `zones`)
 - `src/templates/` — starter scripts for scenario lifecycle
 - `src/examples/` — full scenario-style implementations
