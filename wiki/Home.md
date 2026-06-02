@@ -21,8 +21,8 @@ This wiki is a curated guide for understanding and using the repository quickly.
 
 ## Canonical source docs
 
-- Main README: [`README.md`](../README.md)
-- API reference: [`docs/api-reference`](../docs/api-reference)
-- Patterns: [`docs/patterns`](../docs/patterns)
-- Source modules: [`src/lib`](../src/lib)
-- Type annotations: [`types/cmo.lua`](../types/cmo.lua)
+- Main README: <https://github.com/itausig/cmo-lua-ai/blob/main/README.md>
+- API reference: <https://github.com/itausig/cmo-lua-ai/tree/main/docs/api-reference>
+- Patterns: <https://github.com/itausig/cmo-lua-ai/tree/main/docs/patterns>
+- Source modules: <https://github.com/itausig/cmo-lua-ai/tree/main/src/lib>
+- Type annotations: <https://github.com/itausig/cmo-lua-ai/blob/main/types/cmo.lua>
