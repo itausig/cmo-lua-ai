@@ -2,7 +2,7 @@
 
 Complete reference for all **ScenEdit_\***, **VP_\***, **Tool_\***, **World_\***, and **UI_\*** functions exposed by Command: Modern Operations. Organized by category.
 
-> **Cross-references:** [WRAPPERS.md](./WRAPPERS.md) | [ENUMS.md](./ENUMS.md) | [DATA_TYPES.md](./DATA_TYPES.md)
+> **Cross-references:** [WRAPPERS.md](./WRAPPERS.md) | [ENUMS.md](./ENUMS.md)
 
 ---
 
@@ -962,7 +962,7 @@ Returns `'Day'`, `'Dusk'`, `'Night'`, or `'Dawn'` based on the current scenario 
 ScenEdit_SetStartTime(dateTimeString: string) -> nil
 ```
 
-Sets the scenario start time. See [DATA_TYPES.md — DateTime](./DATA_TYPES.md#datetime) for format.
+Sets the scenario start time. The string uses the `value!format` convention shown in the example below (e.g. `yyyy-MM-dd HH:mm:ss`).
 
 **Example:**
 ```lua
@@ -1611,7 +1611,7 @@ ScenEdit_UpdateUnit({
     mode       = string,    -- 'add_sensor' | 'remove_sensor' | 'add_weapon' | 'remove_weapon'
     dbid       = number,    -- DB ID of sensor/weapon to add
     -- Sensor-specific:
-    arc_detect = string,    -- Arc code for detection (see DATA_TYPES.md)
+    arc_detect = string,    -- Arc code for detection (e.g. '360', 'FF1')
     arc_track  = string,    -- Arc code for tracking
 }) -> Unit
 ```
@@ -1762,7 +1762,7 @@ ScenEdit_GetKeyValue(key: string) -> string
 
 Retrieves a value from the **KeyStore** (persistent string storage saved with the scenario). Returns `""` (empty string) if key does not exist — never `nil`.
 
-> See [DATA_TYPES.md — KeyStore](./DATA_TYPES.md#keystore) for full documentation.
+> See `ScenEdit_SetKeyValue` / `ScenEdit_GetKeyValue` (this section) for the full KeyStore API.
 
 **Example:**
 ```lua
@@ -2574,4 +2574,4 @@ Predicts satellite coverage windows over an area for a given time period.
 
 *End of FUNCTIONS.md*
 
-> **See also:** [WRAPPERS.md](./WRAPPERS.md) | [ENUMS.md](./ENUMS.md) | [DATA_TYPES.md](./DATA_TYPES.md)
+> **See also:** [WRAPPERS.md](./WRAPPERS.md) | [ENUMS.md](./ENUMS.md)

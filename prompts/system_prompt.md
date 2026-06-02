@@ -47,9 +47,10 @@ local unit = ScenEdit_AddUnit({
 })
 ScenEdit_SetKeyValue('NIMITZ_GUID', unit.guid)   -- persist GUID immediately
 
--- Get unit (prefer GUID)
-local u = ScenEdit_GetUnit({guid=ScenEdit_GetKeyValue('NIMITZ_GUID')})
-if not u then return end   -- unit may be dead or not yet spawned
+-- Get unit (prefer GUID). ScenEdit_GetUnit may raise OR return nil when the
+-- unit is dead/not yet spawned (varies by build) — pcall AND nil-check.
+local ok, u = pcall(ScenEdit_GetUnit, {guid=ScenEdit_GetKeyValue('NIMITZ_GUID')})
+if not (ok and u) then return end
 
 -- Modify unit properties
 ScenEdit_SetUnit({
@@ -389,8 +390,8 @@ When generating CMO Lua scripts:
 ---   its dependencies, and any important notes.
 ---
 --- Dependencies:
----   - utils.lua (src/core/utils.lua)
----   - keystore.lua (src/core/keystore.lua)
+---   - [list any helper modules this script loads, e.g. utils.lua]
+---   - [keystore.lua, etc. — paths relative to your scenario folder]
 --- ============================================================
 ```
 

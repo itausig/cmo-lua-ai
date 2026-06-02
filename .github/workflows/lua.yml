@@ -1,0 +1,29 @@
+name: Lua Validation
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Lua 5.1 and luacheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends lua5.1 lua-check
+
+      - name: Lua versions
+        run: |
+          lua5.1 -v
+          luacheck --version
+
+      - name: Repository validation (syntax + generated event scripts)
+        run: lua5.1 tests/validate.lua
+
+      - name: Luacheck (static analysis)
+        run: luacheck src/ types/ tests/

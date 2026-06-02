@@ -2,7 +2,7 @@
 
 All enumerated constants, code values, and option strings used across the CMO Lua API.
 
-> **Cross-references:** [FUNCTIONS.md](./FUNCTIONS.md) | [WRAPPERS.md](./WRAPPERS.md) | [DATA_TYPES.md](./DATA_TYPES.md)
+> **Cross-references:** [FUNCTIONS.md](./FUNCTIONS.md) | [WRAPPERS.md](./WRAPPERS.md)
 
 ---
 
@@ -747,4 +747,4 @@ Many CMO functions accept either a **name** (string) or **GUID** (string). A few
 
 *End of ENUMS.md*
 
-> **See also:** [FUNCTIONS.md](./FUNCTIONS.md) | [WRAPPERS.md](./WRAPPERS.md) | [DATA_TYPES.md](./DATA_TYPES.md)
+> **See also:** [FUNCTIONS.md](./FUNCTIONS.md) | [WRAPPERS.md](./WRAPPERS.md)

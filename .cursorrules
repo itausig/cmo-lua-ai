@@ -46,9 +46,13 @@ ScenEdit_AddUnit({
 ```
 
 ### Getting a unit
+`ScenEdit_GetUnit` may RAISE or return nil when the unit is missing/dead
+(behavior varies by call form and build) — always pcall AND nil-check.
 ```lua
-local unit = ScenEdit_GetUnit({guid='abc-123'})          -- preferred
-local unit = ScenEdit_GetUnit({side='Blue', name='USS Burke'})  -- fallback
+local ok, unit = pcall(ScenEdit_GetUnit, {guid='abc-123'})       -- preferred (GUID)
+if not (ok and unit) then return end
+-- Fallback by name (not unique across sides):
+-- local ok, unit = pcall(ScenEdit_GetUnit, {side='Blue', name='USS Burke'})
 ```
 
 ### Modifying a unit
@@ -188,7 +192,7 @@ end
 - Use `ScenEdit_SpecialMessage` for player-visible feedback, `print` for debug only
 
 ## Common Pitfalls
-- `ScenEdit_GetUnit` returns nil (not an error) if the unit is dead or doesn't exist
+- `ScenEdit_GetUnit` is inconsistent when a unit is dead/missing: depending on the call form and game build it may RAISE an error OR return nil. Always `pcall` it AND nil-check the result.
 - `VP_GetSide().units` can be empty — always check `#side.units > 0` before iterating
 - `ScenEdit_SetMission` with `patrolzone` overwrites the entire zone — always supply all RPs
 - Timed triggers fire at scenario time, not real time — use `ScenEdit_CurrentTime()` for offsets

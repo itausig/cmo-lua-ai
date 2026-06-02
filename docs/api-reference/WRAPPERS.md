@@ -2,7 +2,7 @@
 
 All CMO Lua functions return **wrapper objects** — Lua tables with fields (properties) and methods. Fields marked **RW** are read-write; fields marked **RO** are read-only.
 
-> **Cross-references:** [FUNCTIONS.md](./FUNCTIONS.md) | [ENUMS.md](./ENUMS.md) | [DATA_TYPES.md](./DATA_TYPES.md)
+> **Cross-references:** [FUNCTIONS.md](./FUNCTIONS.md) | [ENUMS.md](./ENUMS.md)
 
 ---
 
@@ -1073,4 +1073,4 @@ local sa = ScenEdit_AddSpecialAction({
 
 *End of WRAPPERS.md*
 
-> **See also:** [FUNCTIONS.md](./FUNCTIONS.md) | [ENUMS.md](./ENUMS.md) | [DATA_TYPES.md](./DATA_TYPES.md)
+> **See also:** [FUNCTIONS.md](./FUNCTIONS.md) | [ENUMS.md](./ENUMS.md)
