@@ -126,6 +126,11 @@ cmo-lua-ai/
     └── validate.lua          # Syntax validation for all library files
 ```
 
+## Wiki
+
+- Local wiki source pages: [`wiki/Home.md`](wiki/Home.md)
+- Recommended first page: [`wiki/Home.md`](wiki/Home.md)
+
 ## Official Documentation Sources
 
 - [Command Lua Docs (Current)](https://commandlua.github.io) — Primary API reference
